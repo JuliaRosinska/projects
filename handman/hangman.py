@@ -2,6 +2,13 @@ import random
 
 def construct_char_dict(word):
     """This func parse word and return dict with chars as keys and their indexes as values."""
+    word = word.lower()
+    if word == "":
+        raise ValueError("[Value Error] Empty string accepted.")
+    
+    if any(char.isdigit() for char in word):
+        raise ValueError("[Value Error] Word contains digits.")
+
     char_dict = {}
     for index, letter in enumerate(word):
         if letter not in char_dict:
@@ -55,9 +62,10 @@ def main():
         if "*" not in game_word:
             print("YOU WON!")
             end = True
+            continue
 
         guess = input().lower()
-        
+
         if guess == word:
             print("YOU WON!")
             end = True
@@ -84,4 +92,5 @@ def main():
         game_status(game_word, attempts)
         print()
 
-main()
+if __name__ == "__main__":
+    main()
