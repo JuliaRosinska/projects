@@ -52,7 +52,25 @@ def main():
 
     end = False
     while end == False:
+        if "*" not in game_word:
+            print("YOU WON!")
+            end = True
+
         guess = input().lower()
+        
+        if guess == word:
+            print("YOU WON!")
+            end = True
+            continue
+
+        if guess.isalpha() == False:
+            print("You can print only chars.")
+            continue
+
+        if len(guess) > 1:
+            print("Print only one letter!")
+            continue
+
         if guess in word:
             print("Cool!")
             game_word = unmask_letter(word_indexes, game_word, guess)
