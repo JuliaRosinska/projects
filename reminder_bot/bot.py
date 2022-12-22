@@ -2,7 +2,36 @@ import telebot
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from telegram_bot_calendar.wyear import WYearTelegramCalendar
 
+import schedule
+from datetime import datetime, date
+import time
+
+import threading
+
+import sqlite3
+
 bot = telebot.TeleBot("5989197400:AAG_4BtZN5I9aCHTJWD3jNFTB1nJpyuv_AE")
+
+#   Database connection
+db = sqlite3.connect('reminders.db', check_same_thread=False)
+cursor = db.cursor()
+
+
+#   Work with database
+def db_insert_line(id_user: int, chat_id: int, rem_date: str, rem_text: str):
+    cursor.execute(f'INSERT INTO reminders (id_user, chat_id, rem_date, rem_text) VALUES (?, ?, ?, ?)', (id_user, chat_id, rem_date, rem_text))
+    db.commit()
+
+def db_select_today():
+    today = date.today().strftime("%d-%m-%Y")
+    cursor.execute(f"""SELECT chat_id, rem_date, rem_text FROM reminders WHERE rem_date = "{today}";""")
+    result = cursor.fetchall()
+    return result
+
+def db_rem_count(chat_id):
+    cursor.execute(f"SELECT COUNT(*) FROM reminders WHERE chat_id = '{chat_id}'")
+    result = cursor.fetchall()
+    return result[0][0]
 
 
 #   Commands handlers
@@ -51,5 +80,26 @@ Enter message:""",
         bot.send_message(m.chat.id, f"""I saved your reminder!
 
 &#128203; {result.strftime("%d.%m.%Y")}: {text}""", parse_mode="HTML")
+        user_id = db_rem_count(m.chat.id) + 1
+        db_insert_line(user_id, m.chat.id, result.strftime("%d-%m-%Y"), text)
+
+#   Reminder handler
+def reminder_check():
+    result = db_select_today()
+    if len(result) < 1:
+        return
+
+    for line in result:
+        bot.send_message(line[0], f"&#128204; Reminder for today: <b>{line[2]}</b>", parse_mode="HTML")
+
+schedule.every().minutes.do(reminder_check)
+
+def schedule_run():
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+
+th = threading.Thread(target=schedule_run)
+th.start()
 
 bot.infinity_polling()
