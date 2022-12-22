@@ -33,6 +33,11 @@ def db_rem_count(chat_id):
     result = cursor.fetchall()
     return result[0][0]
 
+def db_select_user(chat_id):
+    cursor.execute(f"""SELECT id_user, rem_date, rem_text FROM reminders WHERE chat_id ="{chat_id}";""")
+    result = cursor.fetchall()
+    return result
+
 
 #   Commands handlers
 @bot.message_handler(commands=['start'])
@@ -82,6 +87,17 @@ Enter message:""",
 &#128203; {result.strftime("%d.%m.%Y")}: {text}""", parse_mode="HTML")
         user_id = db_rem_count(m.chat.id) + 1
         db_insert_line(user_id, m.chat.id, result.strftime("%d-%m-%Y"), text)
+
+
+@bot.message_handler(commands=['view'])
+def reminders_view(m):
+    reminders = db_select_user(m.chat.id)
+    message = f"&#128203; <b>ID</b>    <b>DATE</b>          <b>REMINDER</b>\n"
+    for line in reminders:
+        message += f"&#128204; <b>{line[0]}</b>      {line[1]}:  {line[2]}\n"
+    bot.send_message(m.chat.id, message, parse_mode="HTML")
+
+
 
 #   Reminder handler
 def reminder_check():
