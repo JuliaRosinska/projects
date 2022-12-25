@@ -3,9 +3,10 @@ from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from telegram_bot_calendar.wyear import WYearTelegramCalendar
 
 from key import *
+import db
 
 import schedule
-from datetime import datetime, date
+from datetime import datetime
 import time
 
 import threading
@@ -13,32 +14,6 @@ import threading
 import sqlite3
 
 bot = telebot.TeleBot(api_token)
-
-#   Database connection
-db = sqlite3.connect('reminders.db', check_same_thread=False)
-cursor = db.cursor()
-
-
-#   Work with database
-def db_insert_line(id_user: int, chat_id: int, rem_date: str, rem_text: str):
-    cursor.execute(f'INSERT INTO reminders (id_user, chat_id, rem_date, rem_text) VALUES (?, ?, ?, ?)', (id_user, chat_id, rem_date, rem_text))
-    db.commit()
-
-def db_select_today():
-    today = date.today().strftime("%d-%m-%Y")
-    cursor.execute(f"""SELECT chat_id, rem_date, rem_text FROM reminders WHERE rem_date = "{today}";""")
-    result = cursor.fetchall()
-    return result
-
-def db_rem_count(chat_id):
-    cursor.execute(f"SELECT COUNT(*) FROM reminders WHERE chat_id = '{chat_id}'")
-    result = cursor.fetchall()
-    return result[0][0]
-
-def db_select_user(chat_id):
-    cursor.execute(f"""SELECT id_user, rem_date, rem_text FROM reminders WHERE chat_id ="{chat_id}";""")
-    result = cursor.fetchall()
-    return result
 
 
 #   Commands handlers
@@ -88,12 +63,12 @@ Enter message:""",
 
 &#128203; {result.strftime("%d.%m.%Y")}: {text}""", parse_mode="HTML")
         user_id = db_rem_count(m.chat.id) + 1
-        db_insert_line(user_id, m.chat.id, result.strftime("%d-%m-%Y"), text)
+        db.insert_line(user_id, m.chat.id, result.strftime("%d-%m-%Y"), text)
 
 
 @bot.message_handler(commands=['view'])
 def reminders_view(m):
-    reminders = db_select_user(m.chat.id)
+    reminders = db.select_user(m.chat.id)
     message = f"&#128203; <b>ID</b>    <b>DATE</b>          <b>REMINDER</b>\n"
     for line in reminders:
         message += f"&#128204; <b>{line[0]}</b>      {line[1]}:  {line[2]}\n"
@@ -103,7 +78,7 @@ def reminders_view(m):
 
 #   Reminder handler
 def reminder_check():
-    result = db_select_today()
+    result = db.select_today()
     if len(result) < 1:
         return
 
