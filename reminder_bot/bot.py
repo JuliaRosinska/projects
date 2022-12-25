@@ -2,6 +2,8 @@ import telebot
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from telegram_bot_calendar.wyear import WYearTelegramCalendar
 
+from key import *
+
 import schedule
 from datetime import datetime, date
 import time
@@ -10,7 +12,7 @@ import threading
 
 import sqlite3
 
-bot = telebot.TeleBot("5989197400:AAG_4BtZN5I9aCHTJWD3jNFTB1nJpyuv_AE")
+bot = telebot.TeleBot(api_token)
 
 #   Database connection
 db = sqlite3.connect('reminders.db', check_same_thread=False)
