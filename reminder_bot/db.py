@@ -7,10 +7,10 @@ cursor = db.cursor()
 
 
 #   Work with database
-def insert_line(id_user: int, chat_id: int, rem_date: str, rem_text: str):
+def insert_line(id_user: int, chat_id: int, rem_date: str, rem_text: str, rem_time: str = None):
     """Insert line to reminders table"""
 
-    cursor.execute(f'INSERT INTO reminders (id_user, chat_id, rem_date, rem_text) VALUES (?, ?, ?, ?)', (id_user, chat_id, rem_date, rem_text))
+    cursor.execute(f'INSERT INTO reminders (id_user, chat_id, rem_date, rem_text, rem_time) VALUES (?, ?, ?, ?, ?)', (id_user, chat_id, rem_date, rem_text, rem_time))
     db.commit()
 
 
@@ -18,7 +18,7 @@ def select_today():
     """Select all lines where date == today"""
 
     today = date.today().strftime("%d-%m-%Y")
-    cursor.execute(f"""SELECT chat_id, rem_date, rem_text FROM reminders WHERE rem_date = "{today}";""")
+    cursor.execute(f"""SELECT id, chat_id, rem_date, rem_text, rem_time FROM reminders WHERE rem_date = "{today}";""")
     result = cursor.fetchall()
     return result
 
@@ -37,3 +37,11 @@ def select_user(chat_id):
     cursor.execute(f"""SELECT id_user, rem_date, rem_text FROM reminders WHERE chat_id ="{chat_id}";""")
     result = cursor.fetchall()
     return result
+
+
+def delete_reminder(id):
+    """Delet reminder by id."""
+
+    cursor.execute(f"DELETE FROM reminders WHERE id = {id}")
+    db.commit()
+

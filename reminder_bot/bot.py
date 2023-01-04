@@ -8,13 +8,25 @@ import db
 import schedule
 from datetime import datetime
 import time
+import re
 
 import threading
 
 import sqlite3
 
+
 bot = telebot.TeleBot(api_token)
 
+#   Check commands
+def check_comm(m):
+    if m.text == "/start":
+        send_welcome(m)
+    elif m.text == "/view":
+        reminders_view(m)
+    elif m.text == "/new":
+        new_reminder(m)
+    else:
+        help(m)
 
 #   Commands handlers
 @bot.message_handler(commands=['start'])
@@ -32,6 +44,7 @@ def help(m):
 /view - all reminders""", parse_mode="HTML")
 
 
+#   Create new reminder
 @bot.message_handler(commands=['new'])
 def new_reminder(m):
     calendar, step = WYearTelegramCalendar().build()
@@ -56,14 +69,45 @@ Enter message:""",
                               c.message.message_id,
                               parse_mode="HTML")
 
-    @bot.message_handler(content_types = ["text"])
-    def text_reminder(m):
-        text = m.text
+        bot.register_next_step_handler(c.message, text_reminder)
+
+@bot.message_handler(content_types = ["text"])
+def text_reminder(m):
+    global text
+    text = m.text
+    if text.startswith("/"):
+        check_comm(m)
+        return
+
+    bot.send_message(m.chat.id, "Enter the time in 30 minute step:")
+    bot.register_next_step_handler(m, time_reminder)
+
+def time_reminder(m):
+    regex = r"^[0-9]{1,2}:[0-9]{2}$"
+    time = m.text
+
+    if not re.search(regex, time):
+        bot.send_message(m.chat.id, "You entered incorrect time, please try again:")
+        bot.register_next_step_handler(m, time_reminder)
+        return
+
+    hour_str, minutes_str = time.split(":")
+    hour = int(hour_str)
+    minutes = int(minutes_str)
+    if hour > 24 and hour < 0:
+        bot.send_message(m.chat.id, "You entered incorrect hour, please try again:")
+        bot.register_next_step_handler(m, time_reminder)
+
+    elif minutes != 0 and minutes != 30:
+        bot.send_message(m.chat.id, "You entered incorrect minutes, please try again:")
+        bot.register_next_step_handler(m, time_reminder)
+
+    else:
         bot.send_message(m.chat.id, f"""I saved your reminder!
 
-&#128203; {result.strftime("%d.%m.%Y")}: {text}""", parse_mode="HTML")
-        user_id = db_rem_count(m.chat.id) + 1
-        db.insert_line(user_id, m.chat.id, result.strftime("%d-%m-%Y"), text)
+&#128203; {result.strftime("%d.%m.%Y")}  <b>{time}</b>: {text}""", parse_mode="HTML")
+        user_id = db.rem_count(m.chat.id) + 1
+        db.insert_line(user_id, m.chat.id, result.strftime("%d-%m-%Y"), text, time)
 
 
 @bot.message_handler(commands=['view'])
@@ -81,11 +125,17 @@ def reminder_check():
     result = db.select_today()
     if len(result) < 1:
         return
-
+    current_time = datetime.now().strftime("%H:%M")
+    print(current_time)
     for line in result:
-        bot.send_message(line[0], f"&#128204; Reminder for today: <b>{line[2]}</b>", parse_mode="HTML")
+        if line[4] == current_time:
+            bot.send_message(line[1], f"&#128204; Reminder for today: <b>{line[3]}</b>", parse_mode="HTML")
+            db.delete_reminder(line[0])
+        else:
+            continue
 
-schedule.every().minutes.do(reminder_check)
+schedule.every().hour.at(":30").do(reminder_check)
+schedule.every().hour.at(":00").do(reminder_check)
 
 def schedule_run():
     while True:
