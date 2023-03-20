@@ -15,3 +15,17 @@ The repo contains projects with my Python practice and testing
   Cool!
   *a*ri*     |     7 attempts left
  ```
+
+#### Currency converter
+**Currency converter** accepts the type of currency and the amount and returns the result of the conversion. The program uses the Currency Exchange API. How it looks like you can see below.
+
+```sh
+Welcome! Enter your currency:
+>>> usd
+Enter the currency you want to convert:
+>>> uah
+Enter the amount:
+>>> 10000
+-----------------------
+10000 USD -> 369300.0 UAH
+ ```
